@@ -26,10 +26,42 @@ function addWorkerLog(logs) {
             MongoClient.connect(url, function(err, db) {
                 if (err) throw err;
                 var database = db.db("miners");
-                database.collection("workers").insertMany(logs, ( function (err, resp) {
-                    if (err) reject(err);
-                    resolve(resp);
-                }));
+                var collection = database.collection("workers");
+
+                if (logs.length < 1 ) {
+                    reject(null);
+                    return
+                }
+
+                var workers = []
+                var totalShare = 0
+                
+                logs.forEach(element => {
+                    var w = {
+                        name: element.worker,
+                        avg: element.averageHashrate/1000000,
+                        share: 0
+                    };
+
+                    totalShare += element.averageHashrate/1000000;
+
+                    workers.push(w);
+                });
+
+                workers.forEach(element => {
+                    element.share = element.avg/totalShare;
+                });
+
+                var obj =   {
+                                "time": logs[0].time,
+                                "totalShare": totalShare,
+                                "workers": workers
+                            }
+
+                // set workers primary key
+                collection.insertOne(obj)
+
+                resolve(true)
             });
         }
     );
