@@ -1,14 +1,42 @@
-const getWorkers = require("../MiningService/EthermineAPI").getWorkers;
+const ethermineService = require("../MiningService/EthermineAPI");
+const getCurrentDolarEther = require("../MiningService/CurrencyAPI").getCurrentDolarEther;
 const database = require("../Database/MongoDAO");
 const cron = require("node-cron");
 
 function updateCurrentWorkers() {
 
-    getWorkers().then( resp => {
+    ethermineService.getWorkers().then( resp => {
         console.log("Adding logs to database...")
         database.addWorkerLog(resp.data.data)
     })
 
+}
+
+async function getPayments() {
+
+    var payouts = (await ethermineService.getPayout()).data.data;
+    var stats = (await ethermineService.getUnpaidStats()).data.data;
+    var dolar = (await getCurrentDolarEther()).data;
+
+    var payments = []
+
+    payouts.forEach( p => {
+        payments.push({
+            next: false,
+            time: p.paidOn,
+            eth: p.amount * 0.000000001 * 0.000000001,
+            usd: p.amount * 0.000000001 * 0.000000001 * dolar.USD
+        })
+    });
+
+    payments.push({
+        next: true,
+        time: stats.time,
+        eth: stats.unpaid * 0.000000001 * 0.000000001,
+        usd: stats.unpaid * 0.000000001 * 0.000000001 * dolar.USD
+    })
+
+    return payments
 }
 
 function getWorkersShare() {
@@ -51,7 +79,7 @@ function getWorkersShare() {
                 var time = 0
 
                 if (resp.length > 0) {
-                    time = resp[0].time
+                    time = new Date(resp[0].time*1000);
                 }
 
                 var result = {
@@ -101,4 +129,4 @@ function startScheduler() {
     });
 }
 
-module.exports = {updateCurrentWorkers, getWorkersShare, startScheduler}
+module.exports = {updateCurrentWorkers, getWorkersShare, startScheduler, getPayments}

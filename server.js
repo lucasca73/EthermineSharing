@@ -12,8 +12,20 @@ function start() {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
 
-        var response = await presenter.getWorkersShare()
-        res.end(JSON.stringify(response));
+        var shares = await presenter.getWorkersShare()
+        var payments = await presenter.getPayments()
+
+        shares.share.forEach( e => {
+            e.usd = e.share * payments[0].usd;
+            e.eth = e.share * payments[0].eth;
+        })
+
+        var result = {
+            shares: shares,
+            payments: payments
+        }
+
+        res.end(JSON.stringify(result));
     });
 
     //listen for request on port 3000, and as a callback function have the port listened on logged
