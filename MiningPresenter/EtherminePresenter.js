@@ -22,7 +22,7 @@ async function getPayments() {
 
     payouts.forEach( p => {
         payments.push({
-            next: false,
+            paid: true,
             time: p.paidOn,
             eth: p.amount * 0.000000001 * 0.000000001,
             usd: p.amount * 0.000000001 * 0.000000001 * dolar.USD
@@ -30,7 +30,7 @@ async function getPayments() {
     });
 
     payments.push({
-        next: true,
+        paid: false,
         time: stats.time,
         eth: stats.unpaid * 0.000000001 * 0.000000001,
         usd: stats.unpaid * 0.000000001 * 0.000000001 * dolar.USD
